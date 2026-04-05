@@ -1,37 +1,22 @@
-# Build stage
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-WORKDIR /src
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build-env
+WORKDIR /app
 
-# Copy project files
-COPY ["FinanceBackend/FinanceBackend.csproj", "FinanceBackend/"]
-RUN dotnet restore "FinanceBackend/FinanceBackend.csproj"
+# Copy everything
+COPY . ./
+# Restore as distinct layers
+RUN dotnet restore FinanceBackend/FinanceBackend.csproj
 
-# Copy source code
-COPY . .
+# Build and publish a release
+RUN dotnet publish FinanceBackend/FinanceBackend.csproj -c Release -o out
 
-# Build project
-WORKDIR "/src/FinanceBackend"
-RUN dotnet build "FinanceBackend.csproj" -c Release -o /app/build
-
-# Publish stage
-FROM build AS publish
-RUN dotnet publish "FinanceBackend.csproj" -c Release -o /app/publish
-
-# Runtime stage
+# Build runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --from=build-env /app/out .
 
-# Expose ports
-EXPOSE 80
-EXPOSE 443
+# Create directory for SQLite database
+RUN mkdir -p /app/data
+ENV ConnectionStrings__DefaultConnection="Data Source=/app/data/finance.db"
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD dotnet FinanceBackend.dll --health || exit 1
-
-# Set environment
-ENV ASPNETCORE_ENVIRONMENT=Production
-
-# Run application
+EXPOSE 8080
 ENTRYPOINT ["dotnet", "FinanceBackend.dll"]

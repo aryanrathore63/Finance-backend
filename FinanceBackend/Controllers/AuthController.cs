@@ -16,6 +16,17 @@ public class AuthController : ControllerBase
         _authService = authService;
     }
 
+    [HttpGet("debug")]
+    public IActionResult Debug()
+    {
+        return Ok(new 
+        { 
+            message = "Code updated with Swagger fix",
+            environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"),
+            timestamp = DateTime.UtcNow
+        });
+    }
+
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request)
     {

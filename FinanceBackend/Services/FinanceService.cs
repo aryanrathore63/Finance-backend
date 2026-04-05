@@ -121,7 +121,11 @@ public class FinanceService : IFinanceService
             .Take(5)
             .ToListAsync();
 
-        var monthlyTrends = await _context.FinancialRecords
+        // Fetch data from database first, then process in memory
+        // This avoids LINQ translation issues with ternary operators in Sum()
+        var allRecords = await _context.FinancialRecords.ToListAsync();
+        
+        var monthlyTrends = allRecords
             .GroupBy(r => new { r.Date.Year, r.Date.Month })
             .Select(g => new TrendPointDto
             {
@@ -129,7 +133,7 @@ public class FinanceService : IFinanceService
                 Value = g.Sum(r => r.Type == TransactionType.Income ? r.Amount : -r.Amount)
             })
             .OrderBy(t => t.Label)
-            .ToListAsync();
+            .ToList();
 
         return new InsightSummaryDto
         {

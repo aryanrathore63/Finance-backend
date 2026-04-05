@@ -17,6 +17,8 @@ COPY --from=build-env /app/out .
 # Create directory for SQLite database
 RUN mkdir -p /app/data
 ENV ConnectionStrings__DefaultConnection="Data Source=/app/data/finance.db"
+ENV ASPNETCORE_URLS=http://+:8080
+ENV ASPNETCORE_ENVIRONMENT=Production
 
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "FinanceBackend.dll"]
